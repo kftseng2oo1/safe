@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="報平安">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>報平安</title>
+<style>
+:root{--bg:#fbf7ef;--ink:#1f2a24;--sub:#5b665f;--green:#2f7d4f;--red:#b83227;--card:#fff;--line:#e4dccb}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:22px;line-height:1.5;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) 16px 24px;padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
+.wrap{max-width:520px;margin:0 auto}
+.screen{display:none}.screen.on{display:block}
+h1{font-size:34px;margin:24px 0 6px}
+h2{font-size:26px;margin:4px 0 8px}
+.date{font-size:26px;color:var(--sub);margin-top:22px;text-align:center}
+.hello{font-size:40px;font-weight:800;text-align:center;margin:0}
+.status{text-align:center;font-size:24px;margin:8px 0 14px;min-height:36px}
+.big{display:block;width:76vw;height:76vw;max-width:310px;max-height:310px;margin:10px auto 0;border-radius:50%;border:0;background:#3f9a63;background:radial-gradient(circle at 35% 30%,#5cc283,#2f7d4f);color:#fff;font-size:54px;font-weight:800;letter-spacing:4px;box-shadow:0 10px 0 #22603c,0 18px 30px rgba(0,0,0,.18);font-family:inherit;padding:0;cursor:pointer}
+.big small{display:block;font-size:22px;font-weight:500;letter-spacing:1px;margin-top:4px}
+.big:active{-webkit-transform:translateY(6px);transform:translateY(6px);box-shadow:0 4px 0 #22603c,0 8px 16px rgba(0,0,0,.18)}
+.big.done{background:#7fb894;background:radial-gradient(circle at 35% 30%,#a9d8b9,#5f9f78);box-shadow:0 10px 0 #4a7d5e,0 18px 30px rgba(0,0,0,.12)}
+.big[disabled]{opacity:.75}
+.streak{text-align:center;font-size:24px;color:var(--green);font-weight:700;margin:22px 0 4px;min-height:36px}
+.btn{display:block;width:100%;min-height:64px;border-radius:16px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:24px;font-weight:700;margin:12px 0;font-family:inherit;padding:10px;cursor:pointer;text-align:center;text-decoration:none;line-height:40px}
+.btn.ghost{background:#fff;color:var(--green)}
+.btn.help{background:#fff;color:var(--red);border-color:var(--red)}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.row{display:-webkit-box;display:-webkit-flex;display:flex}
+.row .btn{-webkit-box-flex:1;-webkit-flex:1;flex:1;margin:12px 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:14px 0}
+.warn{background:#fff6e6;border-color:#efc782}
+label{display:block;font-weight:700;margin:14px 0 6px}
+input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink);font-family:inherit;-webkit-appearance:none;appearance:none}
+.code{font-size:44px;font-weight:800;letter-spacing:4px;text-align:center;color:var(--green);margin:4px 0}
+.note{color:var(--sub);font-size:19px;margin:6px 0}
+.foot{text-align:center;font-size:19px;color:var(--sub);margin-top:18px}
+.link{display:inline-block;background:none;border:0;color:var(--green);text-decoration:underline;font-size:20px;padding:12px;font-family:inherit;cursor:pointer}
+.tel{display:block;text-align:center;font-size:20px;color:var(--red);margin:4px 0;padding:8px}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:none;background:rgba(251,247,239,.97);z-index:9;text-align:center;padding:24px}
+.overlay.on{display:block}
+.ocenter{position:absolute;top:50%;left:24px;right:24px;-webkit-transform:translateY(-50%);transform:translateY(-50%)}
+.oicon{font-size:110px;line-height:1.1}
+.otext{font-size:36px;font-weight:800;margin:14px 0 6px}
+.osub{font-size:24px;color:var(--sub)}
+.hide{display:none}
+.small{font-size:16px;color:var(--sub);word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- 設定（家人幫忙設定一次） -->
+<div id="setup" class="screen">
+  <h1>🌤️ 報平安</h1>
+  <p class="note">每天按一下「我很好」，家人的 LINE 就會收到通知。<br>這一頁請家人幫忙設定一次就好。</p>
+  <div class="card">
+    <label for="sName">家人怎麼稱呼您？</label>
+    <input id="sName" maxlength="10" placeholder="例如：媽媽、阿公">
+    <label for="sDeadline">每天最晚幾點前報平安？</label>
+    <select id="sDeadline"></select>
+    <p class="note">超過這個時間還沒按，就會提醒家人打電話關心。</p>
+    <button class="btn" id="sCreate" type="button">建立</button>
+    <p class="note hide" id="sErr"></p>
+  </div>
+  <div class="foot"><button class="link" id="sRestoreToggle" type="button">換手機？用還原碼繼續使用</button></div>
+  <div class="card hide" id="sRestoreBox">
+    <label for="sRestore">還原碼</label>
+    <input id="sRestore" placeholder="在舊手機「設定」頁可以看到" autocapitalize="off" autocorrect="off">
+    <button class="btn ghost" id="sRestoreBtn" type="button">還原</button>
+  </div>
+</div>
+
+<!-- 邀請家人 -->
+<div id="invite" class="screen">
+  <h1>邀請家人</h1>
+  <div class="card">
+    <p>請每位家人用 LINE 傳下面這句話給「報平安」官方帳號：</p>
+    <div class="code" id="iCode">平安 000000</div>
+    <a class="btn hide" id="iAdd" target="_blank" rel="noopener">① 先加官方帳號好友</a>
+    <a class="btn" id="iShare" target="_blank" rel="noopener">用 LINE 傳給家人</a>
+    <button class="btn ghost" id="iCopy" type="button">複製說明</button>
+    <p class="note" id="iMembers"></p>
+  </div>
+  <button class="btn" id="iDone" type="button">好了，開始使用</button>
+</div>
+
+<!-- 主畫面 -->
+<div id="main" class="screen">
+  <div class="date" id="mDate"></div>
+  <p class="hello" id="mHello"></p>
+  <div class="status" id="mStatus"></div>
+  <button class="big" id="mBig" type="button">我很好<small>按一下告訴家人</small></button>
+  <div class="streak" id="mStreak"></div>
+  <div class="card warn hide" id="mNoFamily">還沒有家人加入。<br><button class="link" id="mInvite" type="button">點這裡邀請家人</button></div>
+  <div id="helpArea">
+    <button class="btn help" id="mHelp" type="button">我需要幫忙</button>
+  </div>
+  <div class="card hide" id="helpConfirm">
+    <h2>要通知家人來幫忙嗎？</h2>
+    <div class="row">
+      <button class="btn danger" id="hYes" type="button">要，通知</button>
+      <button class="btn ghost" id="hNo" type="button">不用了</button>
+    </div>
+  </div>
+  <a class="tel" href="tel:119">緊急狀況請直接撥 119</a>
+  <div class="foot"><span id="mMembers"></span><br><button class="link" id="mSettings" type="button">設定</button></div>
+</div>
+
+<!-- 設定頁 -->
+<div id="settings" class="screen">
+  <h1>設定</h1>
+  <div class="card">
+    <label for="tName">稱呼</label>
+    <input id="tName" maxlength="10">
+    <label for="tDeadline">每天最晚報平安時間</label>
+    <select id="tDeadline"></select>
+    <button class="btn" id="tSave" type="button">儲存</button>
+    <p class="note" id="tMsg"></p>
+  </div>
+  <div class="card">
+    <h2>家人</h2>
+    <p id="tMembers"></p>
+    <button class="btn ghost" id="tInvite" type="button">邀請家人</button>
+  </div>
+  <div class="card">
+    <h2>還原碼</h2>
+    <p class="note">換手機時輸入這組碼就能繼續使用，請不要給別人。</p>
+    <p class="small" id="tRestore"></p>
+    <button class="btn ghost" id="tCopyRestore" type="button">複製還原碼</button>
+  </div>
+  <button class="btn ghost" id="tBack" type="button">回主畫面</button>
+  <div class="foot"><button class="link" id="tReset" type="button">在這支手機上停用</button></div>
+</div>
+
+</div>
+
+<div class="overlay" id="ov"><div class="ocenter">
+  <div class="oicon" id="ovIcon"></div>
+  <div class="otext" id="ovText"></div>
+  <div class="osub" id="ovSub"></div>
+</div></div>
+
+<script>
+(function () {
+  'use strict';
+  // ====== 設定 ======
+  var API = 'https://arcar.kftseng2oo1.workers.dev/safe';
+  var LINE_OA_ID = '';   // LINE 官方帳號 ID，例如 '@123abcde'；填了會出現「加好友」按鈕
+
+  var K_CODE = 'safe_code', K_TOKEN = 'safe_token', K_CACHE = 'safe_cache', K_QUEUE = 'safe_queue';
+  var WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+  var cache = null, busy = false, ovTimer = null, resetArmed = false;
+
+  function $(id) { return document.getElementById(id); }
+  function on(id, ev, fn) { $(id).addEventListener(ev, fn, false); }
+  function ls(k, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(k);
+      if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    } catch (e) {}
+    return null;
+  }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function hide(id, h) { var el = $(id); el.className = el.className.replace(/\s*\bhide\b/g, '') + (h ? ' hide' : ''); }
+  function show(id) {
+    var s = document.querySelectorAll('.screen');
+    for (var i = 0; i < s.length; i++) s[i].className = 'screen';
+    $(id).className = 'screen on';
+    window.scrollTo(0, 0);
+  }
+  function auth(extra) {
+    var o = { code: ls(K_CODE), token: ls(K_TOKEN) };
+    if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) o[k] = extra[k];
+    return o;
+  }
+  function api(path, data, cb) {
+    var x = new XMLHttpRequest();
+    var done = false;
+    function fin(err, r) { if (done) return; done = true; cb(err, r); }
+    x.open('POST', API + path, true);
+    x.setRequestHeader('Content-Type', 'application/json');
+    x.timeout = 15000;
+    x.onload = function () {
+      var r = null;
+      try { r = JSON.parse(x.responseText); } catch (e) {}
+      if (x.status >= 200 && x.status < 300 && r && r.ok) fin(null, r);
+      else fin((r && r.error) || ('http' + x.status), r);
+    };
+    x.onerror = function () { fin('network'); };
+    x.ontimeout = function () { fin('network'); };
+    x.send(JSON.stringify(data || {}));
+  }
+  function saveCache(r) { cache = r; ls(K_CACHE, JSON.stringify(r)); }
+  function speak(t) {
+    try {
+      if (!window.speechSynthesis) return;
+      var u = new SpeechSynthesisUtterance(t);
+      u.lang = 'zh-TW'; u.rate = 0.9;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function buzz() { try { if (navigator.vibrate) navigator.vibrate(120); } catch (e) {} }
+  function overlay(icon, text, sub, ms) {
+    $('ovIcon').innerHTML = icon; $('ovText').innerHTML = text; $('ovSub').innerHTML = sub || '';
+    $('ov').className = 'overlay on';
+    clearTimeout(ovTimer);
+    ovTimer = setTimeout(closeOverlay, ms || 4500);
+  }
+  function closeOverlay() { $('ov').className = 'overlay'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function fillDeadline(sel, val) {
+    var h = '';
+    for (var i = 7; i <= 20; i++) {
+      var v = pad(i) + ':00';
+      var label = (i < 12 ? '上午 ' + i : i === 12 ? '中午 12' : '下午 ' + (i - 12)) + ' 點';
+      h += '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + label + '</option>';
+    }
+    sel.innerHTML = h;
+  }
+  function greet() {
+    var h = new Date().getHours();
+    return h < 5 ? '晚安' : h < 11 ? '早安' : h < 14 ? '午安' : h < 18 ? '下午好' : '晚安';
+  }
+  function deadlineLabel(v) {
+    var h = parseInt((v || '10:00').slice(0, 2), 10);
+    return h < 12 ? '上午 ' + h + ' 點' : h === 12 ? '中午 12 點' : '下午 ' + (h - 12) + ' 點';
+  }
+
+  // ====== 主畫面 ======
+  function renderMain() {
+    var st = cache || {};
+    var d = new Date();
+    $('mDate').innerHTML = (d.getMonth() + 1) + '月' + d.getDate() + '日　星期' + WEEK[d.getDay()];
+    $('mHello').innerHTML = esc(st.name || '') + (st.name ? '，' : '') + greet();
+    var checked = st.lastDate === todayStr();
+    var queued = ls(K_QUEUE) === todayStr();
+    if (checked) $('mStatus').innerHTML = '✅ 今天 ' + esc(st.lastTime) + ' 已經報平安';
+    else if (queued) $('mStatus').innerHTML = '📶 等網路連上就會送出';
+    else $('mStatus').innerHTML = '今天還沒報平安（' + deadlineLabel(st.deadline) + '前）';
+    var big = $('mBig');
+    big.className = checked ? 'big done' : 'big';
+    big.innerHTML = checked ? '已報平安<small>家人都知道了</small>' : '我很好<small>按一下告訴家人</small>';
+    var streak = st.streak || 0;
+    if (checked && streak >= 2) $('mStreak').innerHTML = '已連續 ' + streak + ' 天 🌱';
+    else if (checked) $('mStreak').innerHTML = '今天也很好 🌱';
+    else $('mStreak').innerHTML = '';
+    var mem = st.members || [];
+    hide('mNoFamily', mem.length > 0 || !cache);
+    $('mMembers').innerHTML = mem.length ? '家人：' + esc(mem.join('、')) : '';
+  }
+
+  function doCheckin() {
+    if (busy) return;
+    busy = true;
+    $('mBig').disabled = true;
+    $('mBig').innerHTML = '傳送中…';
+    buzz();
+    api('/checkin', auth(), function (err, r) {
+      busy = false;
+      $('mBig').disabled = false;
+      if (err) {
+        if (err === 'network') {
+          ls(K_QUEUE, todayStr());
+          overlay('📶', '網路好像不通', '沒關係，連上網路後<br>會自動幫您送出');
+          speak('網路好像不通，連上網路後會自動幫您送出');
+        } else if (err === 'auth') {
+          overlay('⚠️', '這支手機的設定失效了', '請家人到「設定」重新設定');
+        } else {
+          overlay('⚠️', '沒有送出去', '請等一下再按一次');
+        }
+        renderMain();
+        return;
+      }
+      ls(K_QUEUE, null);
+      saveCache(r);
+      if (r.already) {
+        overlay('😊', '今天已經報過了', '家人都知道您很好');
+        speak('今天已經報過了，家人都知道您很好');
+      } else {
+        overlay('✅', '已經告訴家人了！', r.members && r.members.length ? '祝您今天順心 🌤️' : '（目前還沒有家人加入）');
+        speak('已經告訴家人了，祝您今天順心');
+      }
+      renderMain();
+    });
+  }
+
+  function flushQueue() {
+    if (busy || ls(K_QUEUE) == null) return;
+    if (ls(K_QUEUE) !== todayStr()) { ls(K_QUEUE, null); renderMain(); return; }   // 過了一天就不補送
+    busy = true;
+    api('/checkin', auth(), function (err, r) {
+      busy = false;
+      if (err) return;
+      ls(K_QUEUE, null);
+      saveCache(r);
+      renderMain();
+    });
+  }
+
+  function refresh() {
+    if (!ls(K_CODE)) return;
+    api('/status', auth(), function (err, r) {
+      if (err === 'auth') { show('setup'); return; }
+      if (err) { renderMain(); return; }
+      saveCache(r);
+      renderMain();
+      flushQueue();
+    });
+  }
+
+  // ====== 求助 ======
+  function askHelp() { hide('helpArea', true); hide('helpConfirm', false); }
+  function cancelHelp() { hide('helpArea', false); hide('helpConfirm', true); }
+  function sendHelp() {
+    cancelHelp();
+    api('/help', auth(), function (err, r) {
+      if (err) {
+        overlay('📞', '沒有送出去', '請直接打電話給家人<br>緊急請撥 119', 8000);
+        speak('沒有送出去，請直接打電話給家人');
+        return;
+      }
+      if (r.throttled) overlay('🆘', '剛剛已經通知過了', '家人應該很快會打給您', 6000);
+      else overlay('🆘', '已經通知家人了', '請把手機放在身邊<br>等家人打電話來', 8000);
+      speak('已經通知家人了，請把手機放在身邊');
+    });
+  }
+
+  // ====== 邀請 ======
+  function inviteText() {
+    var st = cache || {};
+    var code = ls(K_CODE);
+    var t = '我設定了「報平安」🌤️\n';
+    if (LINE_OA_ID) t += '請先加這個 LINE 官方帳號：https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA_ID) + '\n';
+    t += '再傳這句話給官方帳號：\n平安 ' + code + '\n\n之後' + (st.name || '我') + '每天報平安時，你就會收到通知。';
+    return t;
+  }
+  function showInvite() {
+    var code = ls(K_CODE);
+    $('iCode').innerHTML = '平安 ' + code;
+    $('iShare').href = 'https://line.me/R/msg/text/?' + encodeURIComponent(inviteText());
+    if (LINE_OA_ID) { $('iAdd').href = 'https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA_ID); hide('iAdd', false); }
+    var mem = (cache && cache.members) || [];
+    $('iMembers').innerHTML = mem.length ? '已加入：' + esc(mem.join('、')) : '目前還沒有家人加入。';
+    show('invite');
+  }
+  function copyText(t, btn) {
+    var ok = false;
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, t.length);
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) {}
+    var old = btn.innerHTML;
+    btn.innerHTML = ok ? '已複製 ✓' : '請長按代碼自行複製';
+    setTimeout(function () { btn.innerHTML = old; }, 2000);
+  }
+
+  // ====== 建立 / 還原 ======
+  function create() {
+    var name = $('sName').value.replace(/^\s+|\s+$/g, '');
+    if (!name) { $('sErr').innerHTML = '請填寫稱呼'; hide('sErr', false); return; }
+    $('sCreate').disabled = true; $('sCreate').innerHTML = '建立中…';
+    api('/create', { name: name, deadline: $('sDeadline').value }, function (err, r) {
+      $('sCreate').disabled = false; $('sCreate').innerHTML = '建立';
+      if (err) { $('sErr').innerHTML = err === 'network' ? '網路不通，請稍後再試' : '建立失敗（' + esc(err) + '）'; hide('sErr', false); return; }
+      ls(K_CODE, r.code); ls(K_TOKEN, r.token);
+      saveCache(r);
+      showInvite();
+    });
+  }
+  function restore() {
+    var v = $('sRestore').value.replace(/\s+/g, '');
+    var m = /^(\d{6})-([0-9a-f]{32})$/i.exec(v);
+    if (!m) { $('sRestore').value = ''; $('sRestore').placeholder = '格式不對，請再確認'; return; }
+    ls(K_CODE, m[1]); ls(K_TOKEN, m[2].toLowerCase());
+    api('/status', auth(), function (err, r) {
+      if (err) {
+        ls(K_CODE, null); ls(K_TOKEN, null);
+        $('sRestore').value = ''; $('sRestore').placeholder = err === 'network' ? '網路不通，請稍後再試' : '還原碼不正確';
+        return;
+      }
+      saveCache(r); renderMain(); show('main');
+    });
+  }
+
+  // ====== 設定頁 ======
+  function showSettings() {
+    var st = cache || {};
+    $('tName').value = st.name || '';
+    fillDeadline($('tDeadline'), st.deadline || '10:00');
+    $('tMembers').innerHTML = (st.members && st.members.length) ? esc(st.members.join('、')) : '還沒有家人加入';
+    $('tRestore').innerHTML = esc(ls(K_CODE) + '-' + ls(K_TOKEN));
+    $('tMsg').innerHTML = '';
+    resetArmed = false; $('tReset').innerHTML = '在這支手機上停用';
+    show('settings');
+  }
+  function saveSettings() {
+    api('/update', auth({ name: $('tName').value, deadline: $('tDeadline').value }), function (err, r) {
+      if (err) { $('tMsg').innerHTML = '儲存失敗，請稍後再試'; return; }
+      saveCache(r);
+      $('tMsg').innerHTML = '已儲存 ✓';
+    });
+  }
+  function resetDevice() {
+    if (!resetArmed) { resetArmed = true; $('tReset').innerHTML = '確定停用？請先記下還原碼，再按一次'; return; }
+    ls(K_CODE, null); ls(K_TOKEN, null); ls(K_CACHE, null); ls(K_QUEUE, null);
+    cache = null;
+    show('setup');
+  }
+
+  // ====== 啟動 ======
+  function init() {
+    fillDeadline($('sDeadline'), '10:00');
+    on('sCreate', 'click', create);
+    on('sRestoreToggle', 'click', function () { hide('sRestoreBox', false); });
+    on('sRestoreBtn', 'click', restore);
+    on('iCopy', 'click', function () { copyText(inviteText(), $('iCopy')); });
+    on('iDone', 'click', function () { renderMain(); show('main'); refresh(); });
+    on('mBig', 'click', doCheckin);
+    on('mHelp', 'click', askHelp);
+    on('hNo', 'click', cancelHelp);
+    on('hYes', 'click', sendHelp);
+    on('mInvite', 'click', showInvite);
+    on('mSettings', 'click', showSettings);
+    on('tSave', 'click', saveSettings);
+    on('tInvite', 'click', showInvite);
+    on('tCopyRestore', 'click', function () { copyText(ls(K_CODE) + '-' + ls(K_TOKEN), $('tCopyRestore')); });
+    on('tBack', 'click', function () { renderMain(); show('main'); });
+    on('tReset', 'click', resetDevice);
+    on('ov', 'click', closeOverlay);
+
+    window.addEventListener('online', flushQueue, false);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && ls(K_CODE)) refresh(); }, false);
+    setInterval(function () { if (!document.hidden) { renderMain(); flushQueue(); } }, 60000);
+
+    if (ls(K_CODE) && ls(K_TOKEN)) {
+      try { cache = JSON.parse(ls(K_CACHE) || 'null'); } catch (e) { cache = null; }
+      renderMain(); show('main'); refresh();
+    } else {
+      show('setup');
+    }
+
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      try { navigator.serviceWorker.register('sw.js'); } catch (e) {}
+    }
+  }
+  init();
+})();
+</script>
+</body>
+</html>
