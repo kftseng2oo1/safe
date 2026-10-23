@@ -83,7 +83,7 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
 <div id="invite" class="screen">
   <h1>邀請家人</h1>
   <div class="card">
-    <p>請每位家人用 LINE 傳下面這句話給「報平安」官方帳號：</p>
+    <p>請每位家人用 LINE 加入官方帳號「每日訊息」，再傳下面這句話給它：</p>
     <div class="code" id="iCode">平安 000000</div>
     <a class="btn ghost hide" id="iAdd" target="_blank" rel="noopener">自己先加官方帳號好友</a>
     <a class="btn" id="iShare" target="_blank" rel="noopener">用 LINE 傳給家人</a>
@@ -154,7 +154,7 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
   'use strict';
   // ====== 設定 ======
   var API = 'https://arcar.kftseng2oo1.workers.dev/safe';
-  var LINE_OA_ID = '';   // LINE 官方帳號 ID，例如 '@123abcde'；填了會出現「加好友」按鈕
+  var LINE_OA_ID = '@517nsygr';   // LINE 官方帳號 ID，例如 '@123abcde'；填了會出現「加好友」按鈕
 
   var K_CODE = 'safe_code', K_TOKEN = 'safe_token', K_CACHE = 'safe_cache', K_QUEUE = 'safe_queue';
   var WEEK = ['日', '一', '二', '三', '四', '五', '六'];
@@ -344,9 +344,9 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
     var st = cache || {};
     var code = ls(K_CODE);
     var who = st.name || '我';
-    if (!LINE_OA_ID) return '我設定了「報平安」🌤️\n請傳這句話給「報平安」的 LINE 官方帳號：\n平安 ' + code + '\n\n之後' + who + '每天報平安時，你就會收到通知。';
+    if (!LINE_OA_ID) return '我設定了「報平安」🌤️\n請傳這句話給 LINE 官方帳號「每日訊息」：\n平安 ' + code + '\n\n之後' + who + '每天報平安時，你就會收到通知。';
     return '我設定了「報平安」🌤️\n' +
-      '① 先點這裡加官方帳號好友：\n' + oaAdd() + '\n\n' +
+      '① 先點這裡加官方帳號「每日訊息」好友：\n' + oaAdd() + '\n\n' +
       '② 再點這裡，按「傳送」就完成：\n' + oaMsg() + '\n\n' +
       '（也可以直接傳「平安 ' + code + '」給官方帳號）\n' +
       '之後' + who + '每天報平安時，你就會收到通知。';
