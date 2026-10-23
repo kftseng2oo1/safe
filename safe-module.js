@@ -37,7 +37,8 @@ function safeJson(obj, status = 200) {
     },
   });
 }
-function safeLineToken(env) { return env.LINE_CHANNEL_TOKEN || env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_TOKEN; }
+// 有設 SAFE_LINE_TOKEN 就用專屬官方帳號（Jason Friend），否則沿用 arcar 的 LINE_CHANNEL_TOKEN（每日訊息）
+function safeLineToken(env) { return env.SAFE_LINE_TOKEN || env.LINE_CHANNEL_TOKEN || env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_TOKEN; }
 
 async function safePush(env, userIds, text) {
   // 回傳 { sent: 實際送達人數, failed: LINE 拒收（額度用完、token 錯誤等） }
@@ -120,6 +121,28 @@ export async function handleSafe(request, env) {
   if (!env.SAFE_KV) return safeJson({ ok: false, error: 'SAFE_KV 尚未綁定' }, 500);
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/safe/, '') || '/';
+  // 專屬官方帳號的 webhook：LINE Developers 設定 Webhook URL = https://arcar.kftseng2oo1.workers.dev/safe/webhook
+  if (path === '/webhook') {
+    if (request.method !== 'POST') return new Response('OK');
+    const raw = await request.text();
+    if (env.SAFE_LINE_SECRET) {
+      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.SAFE_LINE_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(raw)));
+      if (btoa(String.fromCharCode(...mac)) !== request.headers.get('x-line-signature')) return new Response('bad signature', { status: 401 });
+    }
+    let data = {};
+    try { data = JSON.parse(raw); } catch (e) {}
+    for (const ev of data.events || []) {
+      if (await safeLineEvent(ev, env, true)) continue;
+      if (!ev.replyToken) continue;
+      if (ev.type === 'follow' || (ev.type === 'message' && ev.message && ev.message.type === 'text')) {
+        await safeReply(env, ev.replyToken,
+          '🌤️ 這裡是「報平安」通知帳號\n\n加入家人的報平安：傳「平安 + 6 位數代碼」\n例如：平安 123456\n\n查詢今天狀況：傳「平安狀態」');
+      }
+    }
+    return new Response('OK');
+  }
+
   let body = {};
   if (request.method === 'POST') { try { body = await request.json(); } catch (e) {} }
 
@@ -182,8 +205,9 @@ export async function handleSafe(request, env) {
 
 // ---------------- LINE webhook ----------------
 // 家人傳：「平安 123456」加入、「取消平安 123456」退出、「平安狀態」查詢
-export async function safeLineEvent(event, env) {
+export async function safeLineEvent(event, env, fromSafeWebhook) {
   if (!env.SAFE_KV) return false;
+  if (env.SAFE_LINE_TOKEN && !fromSafeWebhook) return false;   // 已搬到專屬帳號：每日訊息那邊不再處理
   if (!event || event.type !== 'message' || !event.message || event.message.type !== 'text') return false;
   const text = event.message.text.trim().replace(/\s+/g, ' ');
   const uid = event.source && event.source.userId;
