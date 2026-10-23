@@ -106,6 +106,7 @@ function safeCleanDeadline(s) {
 // ---------------- HTTP ----------------
 export async function handleSafe(request, env) {
   if (request.method === 'OPTIONS') return safeJson({ ok: true });
+  if (!env.SAFE_KV) return safeJson({ ok: false, error: 'SAFE_KV 尚未綁定' }, 500);
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/safe/, '') || '/';
   let body = {};
@@ -171,6 +172,7 @@ export async function handleSafe(request, env) {
 // ---------------- LINE webhook ----------------
 // 家人傳：「平安 123456」加入、「取消平安 123456」退出、「平安狀態」查詢
 export async function safeLineEvent(event, env) {
+  if (!env.SAFE_KV) return false;
   if (!event || event.type !== 'message' || !event.message || event.message.type !== 'text') return false;
   const text = event.message.text.trim().replace(/\s+/g, ' ');
   const uid = event.source && event.source.userId;
@@ -226,6 +228,7 @@ export async function safeLineEvent(event, env) {
 
 // ---------------- Cron ----------------
 export async function safeCron(env) {
+  if (!env.SAFE_KV) return;
   const n = safeNow();
   if (n.mins % 5 !== 0) return;   // arcar 每分鐘觸發，這裡每 5 分鐘查一次，省 KV 讀取
   for (const code of await safeIndex(env)) {
