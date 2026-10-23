@@ -85,7 +85,7 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
   <div class="card">
     <p>請每位家人用 LINE 傳下面這句話給「報平安」官方帳號：</p>
     <div class="code" id="iCode">平安 000000</div>
-    <a class="btn hide" id="iAdd" target="_blank" rel="noopener">① 先加官方帳號好友</a>
+    <a class="btn ghost hide" id="iAdd" target="_blank" rel="noopener">自己先加官方帳號好友</a>
     <a class="btn" id="iShare" target="_blank" rel="noopener">用 LINE 傳給家人</a>
     <button class="btn ghost" id="iCopy" type="button">複製說明</button>
     <p class="note" id="iMembers"></p>
@@ -338,19 +338,24 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
   }
 
   // ====== 邀請 ======
+  function oaAdd() { return 'https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA_ID); }
+  function oaMsg() { return 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA_ID) + '/?' + encodeURIComponent('平安 ' + ls(K_CODE)); }
   function inviteText() {
     var st = cache || {};
     var code = ls(K_CODE);
-    var t = '我設定了「報平安」🌤️\n';
-    if (LINE_OA_ID) t += '請先加這個 LINE 官方帳號：https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA_ID) + '\n';
-    t += '再傳這句話給官方帳號：\n平安 ' + code + '\n\n之後' + (st.name || '我') + '每天報平安時，你就會收到通知。';
-    return t;
+    var who = st.name || '我';
+    if (!LINE_OA_ID) return '我設定了「報平安」🌤️\n請傳這句話給「報平安」的 LINE 官方帳號：\n平安 ' + code + '\n\n之後' + who + '每天報平安時，你就會收到通知。';
+    return '我設定了「報平安」🌤️\n' +
+      '① 先點這裡加官方帳號好友：\n' + oaAdd() + '\n\n' +
+      '② 再點這裡，按「傳送」就完成：\n' + oaMsg() + '\n\n' +
+      '（也可以直接傳「平安 ' + code + '」給官方帳號）\n' +
+      '之後' + who + '每天報平安時，你就會收到通知。';
   }
   function showInvite() {
     var code = ls(K_CODE);
     $('iCode').innerHTML = '平安 ' + code;
     $('iShare').href = 'https://line.me/R/msg/text/?' + encodeURIComponent(inviteText());
-    if (LINE_OA_ID) { $('iAdd').href = 'https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA_ID); hide('iAdd', false); }
+    if (LINE_OA_ID) { $('iAdd').href = oaAdd(); hide('iAdd', false); }
     var mem = (cache && cache.members) || [];
     $('iMembers').innerHTML = mem.length ? '已加入：' + esc(mem.join('、')) : '目前還沒有家人加入。';
     show('invite');
