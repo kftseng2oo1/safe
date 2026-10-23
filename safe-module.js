@@ -40,14 +40,25 @@ function safeJson(obj, status = 200) {
 function safeLineToken(env) { return env.LINE_CHANNEL_TOKEN || env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_TOKEN; }
 
 async function safePush(env, userIds, text) {
+  // 回傳 { sent: 實際送達人數, failed: LINE 拒收（額度用完、token 錯誤等） }
   const ids = [...new Set((userIds || []).filter(Boolean))];
-  if (!ids.length) return;
+  if (!ids.length) return { sent: 0, failed: false };
   const one = ids.length === 1;
-  await fetch('https://api.line.me/v2/bot/message/' + (one ? 'push' : 'multicast'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + safeLineToken(env) },
-    body: JSON.stringify({ to: one ? ids[0] : ids, messages: [{ type: 'text', text }] }),
-  });
+  try {
+    const r = await fetch('https://api.line.me/v2/bot/message/' + (one ? 'push' : 'multicast'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + safeLineToken(env) },
+      body: JSON.stringify({ to: one ? ids[0] : ids, messages: [{ type: 'text', text }] }),
+    });
+    if (!r.ok) {
+      console.log('safePush failed', r.status, await r.text().catch(() => ''));
+      return { sent: 0, failed: true, status: r.status };
+    }
+    return { sent: ids.length, failed: false };
+  } catch (e) {
+    console.log('safePush error', e && e.message);
+    return { sent: 0, failed: true };
+  }
 }
 async function safeReply(env, replyToken, text) {
   await fetch('https://api.line.me/v2/bot/message/reply', {
@@ -154,16 +165,16 @@ export async function handleSafe(request, env) {
     const text = late
       ? `✅ ${c.name} 剛剛 ${n.hm} 報平安了，可以放心了。`
       : `🌤️ ${c.name} 今天 ${n.hm} 報平安：我很好！` + (c.streak > 1 ? `\n已連續 ${c.streak} 天 🌱` : '');
-    await safePush(env, ids, text);
-    return safeJson(safeView(c));
+    const p = await safePush(env, ids, text);
+    return safeJson({ ...safeView(c), sent: p.sent, pushFailed: p.failed });
   }
 
   if (path === '/help') {
+    if (!ids.length) return safeJson({ ...safeView(c), sent: 0, noFamily: true });
     if (Date.now() - (c.helpAt || 0) < 3 * 60 * 1000) return safeJson({ ...safeView(c), throttled: true });
-    c.helpAt = Date.now();
-    await safePut(env, c);
-    await safePush(env, ids, `🆘 ${c.name} 按了「我需要幫忙」（${safeNow().hm}）\n請盡快打電話給${c.name}！`);
-    return safeJson(safeView(c));
+    const p = await safePush(env, ids, `🆘 ${c.name} 按了「我需要幫忙」（${safeNow().hm}）\n請盡快打電話給${c.name}！`);
+    if (p.sent) { c.helpAt = Date.now(); await safePut(env, c); }   // 送失敗不進冷卻，可以馬上再按
+    return safeJson({ ...safeView(c), sent: p.sent, pushFailed: p.failed });
   }
 
   return safeJson({ ok: false, error: 'not_found' }, 404);

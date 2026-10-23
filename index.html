@@ -288,8 +288,14 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
       if (r.already) {
         overlay('😊', '今天已經報過了', '家人都知道您很好');
         speak('今天已經報過了，家人都知道您很好');
+      } else if (r.pushFailed) {
+        overlay('⚠️', '家人可能沒收到', '已經記下來了<br>方便的話打個電話說一聲', 7000);
+        speak('家人可能沒收到，方便的話打個電話說一聲');
+      } else if (!r.members || !r.members.length) {
+        overlay('✅', '已經記下來了', '目前還沒有家人加入<br>請家人幫忙邀請', 6000);
+        speak('已經記下來了，目前還沒有家人加入');
       } else {
-        overlay('✅', '已經告訴家人了！', r.members && r.members.length ? '祝您今天順心 🌤️' : '（目前還沒有家人加入）');
+        overlay('✅', '已經告訴家人了！', '祝您今天順心 🌤️');
         speak('已經告訴家人了，祝您今天順心');
       }
       renderMain();
@@ -331,9 +337,20 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
         speak('沒有送出去，請直接打電話給家人');
         return;
       }
-      if (r.throttled) overlay('🆘', '剛剛已經通知過了', '家人應該很快會打給您', 6000);
-      else overlay('🆘', '已經通知家人了', '請把手機放在身邊<br>等家人打電話來', 8000);
-      speak('已經通知家人了，請把手機放在身邊');
+      saveCache(r); renderMain();
+      if (r.noFamily) {
+        overlay('📞', '還沒有家人加入', '通知沒辦法送出<br>請直接打電話給家人<br>緊急請撥 119', 10000);
+        speak('還沒有家人加入，請直接打電話給家人');
+      } else if (r.pushFailed || !r.sent && !r.throttled) {
+        overlay('📞', '沒有送出去', '請直接打電話給家人<br>緊急請撥 119', 10000);
+        speak('沒有送出去，請直接打電話給家人');
+      } else if (r.throttled) {
+        overlay('🆘', '剛剛已經通知過了', '家人應該很快會打給您', 6000);
+        speak('剛剛已經通知過了，家人應該很快會打給您');
+      } else {
+        overlay('🆘', '已經通知家人了', '請把手機放在身邊<br>等家人打電話來', 8000);
+        speak('已經通知家人了，請把手機放在身邊');
+      }
     });
   }
 
