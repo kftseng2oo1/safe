@@ -1,7 +1,7 @@
 // =====================================================================
 // 報平安 safe-checkin — arcar Worker 模組
 // 需要：KV binding  SAFE_KV
-//       Secret      LINE_CHANNEL_ACCESS_TOKEN（或沿用 arcar 既有的 LINE_TOKEN）
+//       Secret      沿用 arcar 既有的 LINE_CHANNEL_TOKEN
 // 接法：
 //   fetch：   if (url.pathname.startsWith('/safe')) return handleSafe(request, env);
 //   webhook： for (const ev of body.events) { if (await safeLineEvent(ev, env)) continue; ...原本的處理 }
@@ -37,7 +37,7 @@ function safeJson(obj, status = 200) {
     },
   });
 }
-function safeLineToken(env) { return env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_TOKEN; }
+function safeLineToken(env) { return env.LINE_CHANNEL_TOKEN || env.LINE_CHANNEL_ACCESS_TOKEN || env.LINE_TOKEN; }
 
 async function safePush(env, userIds, text) {
   const ids = [...new Set((userIds || []).filter(Boolean))];
