@@ -33,6 +33,7 @@ h2{font-size:26px;margin:4px 0 8px}
 .btn{display:block;width:100%;min-height:64px;border-radius:16px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:24px;font-weight:700;margin:12px 0;font-family:inherit;padding:10px;cursor:pointer;text-align:center;text-decoration:none;line-height:40px}
 .btn.ghost{background:#fff;color:var(--green)}
 .btn.help{background:#fff;color:var(--red);border-color:var(--red)}
+.btn.lineshare{background:#06c755;border-color:#06c755;color:#fff}
 .btn.danger{background:var(--red);border-color:var(--red);color:#fff}
 .row{display:-webkit-box;display:-webkit-flex;display:flex}
 .row .btn{-webkit-box-flex:1;-webkit-flex:1;flex:1;margin:12px 6px}
@@ -100,7 +101,8 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
   <div class="status" id="mStatus"></div>
   <button class="big" id="mBig" type="button">我很好<small>按一下告訴家人</small></button>
   <div class="streak" id="mStreak"></div>
-  <div class="card warn hide" id="mNoFamily">還沒有家人加入。<br><button class="link" id="mInvite" type="button">點這裡邀請家人</button></div>
+  <a class="btn lineshare" id="mLine" href="#" target="_blank" rel="noopener">💬 用 LINE 傳平安給親友</a>
+  <div class="card warn hide" id="mNoFamily">還沒有家人加入。可以先用上面的綠色按鈕，直接用 LINE 傳給親友。<br><button class="link" id="mInvite" type="button">點這裡邀請家人</button></div>
   <div id="helpArea">
     <button class="btn help" id="mHelp" type="button">我需要幫忙</button>
   </div>
@@ -238,6 +240,16 @@ input,select{display:block;width:100%;font-size:24px;padding:12px;border-radius:
     var h = parseInt((v || '10:00').slice(0, 2), 10);
     return h < 12 ? '上午 ' + h + ' 點' : h === 12 ? '中午 12 點' : '下午 ' + (h - 12) + ' 點';
   }
+
+  // ====== LINE 分享報平安（不經後端，沒有家人加入也能用） ======
+  function lineSafeText() {
+    var d = new Date(), name = (cache && cache.name) || '';
+    return '【報平安】' + (name ? name + ' ' : '') + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) +
+      '\n我很好，請放心 ✅';
+  }
+  on('mLine', 'click', function () {
+    this.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(lineSafeText());
+  });
 
   // ====== 主畫面 ======
   function renderMain() {
